@@ -128,9 +128,8 @@ fn decrypt_metadata(game_info: &GameInfo, key: &[u8; 42]) -> Result<()> {
 fn main() {
     fn inner() -> Result<()> {
         log::info!("读取游戏信息");
-        let info = GameInfo::detect(
-            std::env::current_dir().context("Unable to get game info in current directory.")?,
-        )?;
+        let info = GameInfo::detect(std::env::current_dir()?)
+            .context("Unable to get game info in current directory.")?;
 
         log::info!("查找解密密钥");
         let key = search_key(&info).context("Failed to find encryption key")?;
