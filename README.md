@@ -31,7 +31,7 @@ Mods for 鬼谷八荒(guigubahuang / Tale of Immortal)
 你可以通过以下方式来参与到该项目：
 
 - 如果在使用中遇到任何问题，请提交[ISSUE](https://github.com/lolligun/ModBahuang/issues)。
-- 通过修改 BUG、添加功能或者完成代码中存在的 `TODO` 或者 `FIXME`注释并提交 [PR](https://github.com/lolligun/ModBahuang/pulls)
+- 通过修改 BUG、添加功能或者完成代码中存在的 `TODO` 或者 `FIXME` 注释并提交 [PR](https://github.com/lolligun/ModBahuang/pulls)
 
 ## Credits
 - [MelonLoader](https://github.com/LavaGang/MelonLoader)
