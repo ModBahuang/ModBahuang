@@ -12,7 +12,7 @@ namespace Villain
 {
     internal class Item
     {
-        private class Value
+        private readonly struct Value
         {
             private enum ValueType
             {
@@ -53,88 +53,142 @@ namespace Villain
             {
                 IsNone = value == null;
 
+                @bool = default;
+                @byte = default;
+                @sbyte = default;
+                @short = default;
+                @ushort = default;
+                @int = default;
+                @uint = default;
+                @long = default;
+                @ulong = default;
+                @char = default;
+                @double = default;
+                @float = default;
+                @string = IL2CPP.ManagedStringToIl2Cpp("");
+
                 if (type == typeof(string))
                 {
                     tag = ValueType.String;
+                    if (value == null) return;
+                    // FIXME:
+                    //  The purpose of intern is to prevent GC from freeing our string to avoid UAF.
+                    //  But intern will run into some performance problems sometimes.
+                    //  Maybe making a reference circle is another solution.
+                    @string = Il2CppHelper.il2cpp_string_intern(
+                        IL2CPP.ManagedStringToIl2Cpp(value.Value<string>()));
                     
-                    if (value == null)
-                    {
-                        // An empty string will never be clean up.
-                        @string = IL2CPP.ManagedStringToIl2Cpp("");
-                    }
-                    else
-                    {
-                        // FIXME:
-                        //  The purpose of intern is to prevent GC from freeing our string to avoid UAF.
-                        //  But intern will run into some performance problems sometimes.
-                        //  Maybe making a reference circle is another solution.
-                        @string = Il2CppHelper.il2cpp_string_intern(
-                            IL2CPP.ManagedStringToIl2Cpp(value.Value<string>()));
-                    }
                 }
                 else if (type == typeof(bool))
                 {
                     tag = ValueType.Boolean;
-                    @bool = value?.Value<bool>() ?? default;
+                    if (value == null) return;
+                    @bool = value.Value<bool>();
                 }
                 else if (type == typeof(byte))
                 {
                     tag = ValueType.Byte;
-                    @byte = value?.Value<byte>() ?? default;
+                    if (value == null) return;
+                    @byte = value.Value<byte>();
                 }
                 else if (type == typeof(sbyte))
                 {
                     tag = ValueType.SByte;
-                    @sbyte = value?.Value<sbyte>() ?? default;
+                    if (value == null) return;
+                    @sbyte = value.Value<sbyte>();
                 }
                 else if (type == typeof(short))
                 {
                     tag = ValueType.Int16;
-                    @short = value?.Value<short>() ?? default;
+                    if (value == null) return;
+                    @short = value.Value<short>();
                 }
                 else if (type == typeof(ushort))
                 {
                     tag = ValueType.UInt16;
-                    @ushort = value?.Value<ushort>() ?? default;
+                    if (value == null) return;
+                    @ushort = value.Value<ushort>();
                 }
                 else if (type == typeof(int))
                 {
                     tag = ValueType.Int32;
-                    @int = value?.Value<int>() ?? default;
+                    if (value == null) return;
+                    @int = value.Value<int>();
                 }
                 else if (type == typeof(uint))
                 {
                     tag = ValueType.UInt32;
-                    @uint = value?.Value<uint>() ?? default;
+                    if (value == null) return;
+                    @uint = value.Value<uint>();
                 }
                 else if (type == typeof(long))
                 {
                     tag = ValueType.Int64;
-                    @long = value?.Value<long>() ?? default;
+                    if (value == null) return;
+                    @long = value.Value<long>();
                 }
                 else if (type == typeof(ulong))
                 {
                     tag = ValueType.UInt64;
-                    @ulong = value?.Value<ulong>() ?? default;
+                    if (value == null) return;
+                    @ulong = value.Value<ulong>();
                 }
                 else if (type == typeof(char))
                 {
                     tag = ValueType.Char;
-                    @char = value?.Value<char>() ?? default;
+                    if (value == null) return;
+                    @char = value.Value<char>();
                 }
                 else if (type == typeof(double))
                 {
                     tag = ValueType.Double;
-                    @double = value?.Value<double>() ?? default;
+                    if (value == null) return;
+                    @double = value.Value<double>();
                 }
                 else if (type == typeof(float))
                 {
                     tag = ValueType.Single;
-                    @float = value?.Value<float>() ?? default;
+                    if (value == null) return;
+                    @float = value.Value<float>();
                 }
                 else
                 {
                     throw new NotSupportedException($"Type {type} is not supported");
+                }
+            }
+
+            public unsafe IntPtr Ptr()
+            {
+                switch (tag)
+                {
+                    case ValueType.String:
+                        return @string;
+                    case ValueType.Boolean:
+                        fixed (bool* p = &@bool) { return (IntPtr)p; }
+                    case ValueType.Byte:
+                        fixed (byte* p = &@byte) { return (IntPtr)p; }
+                    case ValueType.SByte:
+                        fixed (sbyte* p = &@sbyte) { return (IntPtr)p; }
+                    case ValueType.Int16:
+                        fixed (short* p = &@short) { return (IntPtr)p; }
+                    case ValueType.UInt16:
+                        fixed (ushort* p = &@ushort) { return (IntPtr)p; }
+                    case ValueType.Int32:
+                        fixed (int* p = &@int) { return (IntPtr)p; }
+                    case ValueType.UInt32:
+                        fixed (uint* p = &@uint) { return (IntPtr)p; }
+                    case ValueType.Int64:
+                        fixed (long* p = &@long) { return (IntPtr)p; }
+                    case ValueType.UInt64:
+                        fixed (ulong* p = &@ulong) { return (IntPtr)p; }
+                    case ValueType.Char:
+                        fixed (char* p = &@char) { return (IntPtr)p; }
+                    case ValueType.Double:
+                        fixed (double* p = &@double) { return (IntPtr)p; }
+                    case ValueType.Single:
+                        fixed (float* p = &@float) { return (IntPtr)p; }
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
 
@@ -236,7 +290,7 @@ namespace Villain
         /// <summary>
         /// The fields of the <see cref="Record.ItemType"/>, in parameter order.
         /// </summary>
-        private readonly (PropertyInfo, int, Value)[] values;
+        private readonly Value[] values;
 
         private readonly Record record;
 
@@ -255,9 +309,9 @@ namespace Villain
 
             var values = record.FieldsInfo.Select(a =>
             {
-                var (p, ofs) = a;
+                var p = a.Item1;
                 var v = new Value(p.PropertyType, obj.GetValue(p.Name)?.Value<JValue>());
-                return (p, ofs, v);
+                return v;
             }).ToArray();
 
             var item = new Item(id, new Spans(span), values, record);
@@ -265,7 +319,7 @@ namespace Villain
             return item;
         }
 
-        private Item(int id, Spans source, (PropertyInfo, int, Value)[] values, Record record)
+        private Item(int id, Spans source, Value[] values, Record record)
         {
             Id = id;
             Source = source;
@@ -280,7 +334,7 @@ namespace Villain
                 throw new ArgumentException("Unexcepted instance", nameof(item));
             }
 
-            foreach (var (_, ofs, value) in values)
+            foreach (var (ofs, value) in values.Zip(record.FieldsInfo, (v, info) => (info.Item2, v)))
             {
                 if (value.IsNone) continue;
 
@@ -323,37 +377,26 @@ namespace Villain
                 var id = Id;
                 args[0] = (IntPtr) (&id);
 
-                for (var i = 1; i < paramLen; i++)
+                fixed(Value* arr = values)
                 {
-
-                    var (p, _, v) = values[i - 1];
-
-                    if (v.IsNone)
+                    for (var i = 1; i < paramLen; i++)
                     {
-                        Logger.Warn($"Required field {p} does not exsit in item(id: {Id}, @ {Source}), set to default.");
+                        var j = i - 1;
+                        var v = &arr[j];
+
+                        if (v->IsNone)
+                        {
+                            Logger.Warn($"Required field({record.FieldsInfo[j].Item1}) does not exsit in item(id: {Id}, @ {Source}), set to default.");
+                        }
+
+                        // FIXME: Is it REALLY safe?
+                        args[i] = v->Ptr();
                     }
-
-                    var j = i;
-
-                    v.Switch(
-                        string1 => args[j] = string1,
-                        bool1 => args[j] = (IntPtr) (&bool1),
-                        byte1 => args[j] = (IntPtr) (&byte1),
-                        sbyte1 => args[j] = (IntPtr) (&sbyte1),
-                        short1 => args[j] = (IntPtr) (&short1),
-                        ushort1 => args[j] = (IntPtr) (&ushort1),
-                        int1 => args[j] = (IntPtr) (&int1),
-                        uint1 => args[j] = (IntPtr) (&uint1),
-                        long1 => args[j] = (IntPtr) (&long1),
-                        ulong1 => args[j] = (IntPtr) (&ulong1),
-                        char1 => args[j] = (IntPtr) (&char1),
-                        double1 => args[j] = (IntPtr) (&double1),
-                        float1 => args[j] = (IntPtr) (&float1)
-                    );
+                    var exc = IntPtr.Zero;
+                    IL2CPP.il2cpp_runtime_invoke(record.ItemCtor.Item2, IL2CPP.Il2CppObjectBaseToPtrNotNull(obj), (void**)args, ref exc);
+                    Il2CppException.RaiseExceptionIfNecessary(exc);
                 }
-                var exc = IntPtr.Zero;
-                IL2CPP.il2cpp_runtime_invoke(record.ItemCtor.Item2, IL2CPP.Il2CppObjectBaseToPtrNotNull(obj), (void**)args, ref exc);
-                Il2CppException.RaiseExceptionIfNecessary(exc);
+                
             }
 
             return obj;
@@ -369,13 +412,15 @@ namespace Villain
             Source.Merge(other.Source);
             for (var i = 0; i < values.Length; i++)
             {
-                var (p1, ofs1, _) = values[i];
-                var (p2, ofs2, v) = other.values[i];
-
+                var (p1, ofs1) = record.FieldsInfo[i];
+                var (p2, ofs2) = other.record.FieldsInfo[i];
+                
                 Logger.Assert(p1 == p2 && ofs1 == ofs2, "Must be same");
+
+                var v = other.values[i];
                 if (!v.IsNone)
                 {
-                    values[i].Item3 = v;
+                    values[i] = v;
                 }
             }
         }
