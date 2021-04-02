@@ -38,7 +38,7 @@ namespace Villain
         private static void Bridge(IntPtr @this, IntPtr handle)
         {
             var record = BRIDGE_INDEX[handle];
-            Logger.Debug($"{record}");
+            Logger.Debug(() => $"{record}");
 
             try
             {
@@ -84,9 +84,9 @@ namespace Villain
                 v.ApplyTo(it);
             }
 
-            foreach (var id in set)
+            foreach (var item in set.Select(id => items[id]))
             {
-                conf.allConfBase.Add(items[id].Construct());
+                conf.allConfBase.Add(item.Construct());
             }
         }
 
