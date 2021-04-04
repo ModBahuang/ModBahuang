@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FemaleOnlyExist", "FemaleOn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoMeansYes", "NoMeansYes\NoMeansYes.csproj", "{591E8D14-47A8-49FE-94CD-7CD48BCBAEF1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hylas", "Hylas\Hylas.csproj", "{B76C1627-621E-46F8-AF77-4A4615DFCCFD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{591E8D14-47A8-49FE-94CD-7CD48BCBAEF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{591E8D14-47A8-49FE-94CD-7CD48BCBAEF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{591E8D14-47A8-49FE-94CD-7CD48BCBAEF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B76C1627-621E-46F8-AF77-4A4615DFCCFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B76C1627-621E-46F8-AF77-4A4615DFCCFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B76C1627-621E-46F8-AF77-4A4615DFCCFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B76C1627-621E-46F8-AF77-4A4615DFCCFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
