@@ -79,21 +79,13 @@ namespace Hylas
         {
             MelonLogger.Msg(path);
 
-            const string templateObjectPath = "Game/Portrait/Woman/Body/101";
-            if (!path.IsPortrait()) return true;
-
-            var pp = path.ToPhysicalPath();
-            if (!pp.Exist()) return true;
-
-            // Can't use base method directly because of the missing of reverse path.
+            // Can't use base method directly because of the missing of reverse patch.
             // FIXME: There is no guarantee `Load<T>` won't use `Load` internally
-            var orig = g.res.Load<GameObject>(templateObjectPath);
+            var product = Worker.Pick(path, g.res.Load<GameObject>)?.Produce();
 
-            var template = UnityEngine.Object.Instantiate(orig).Cast<GameObject>();
-            var renderer = template.GetComponentInChildren<SpriteRenderer>();
-            renderer.LoadCustomSprite(pp);
+            if (product == null) return true;
 
-            __result = template;
+            __result = product;
 
             return false;
         }
@@ -107,9 +99,9 @@ namespace Hylas
             return path.StartsWith("Game/Portrait/");
         }
 
-        public static string ToPhysicalPath(this string path)
+        public static bool IsBattleHuman(this string path)
         {
-            return Path.Combine(MelonUtils.GameDirectory, "Mods", nameof(Hylas), path.Replace("Game/Portrait/", ""));
+            return path.StartsWith("Battle/Human/");
         }
 
         public static bool Exist(this string path)
