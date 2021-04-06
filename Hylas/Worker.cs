@@ -15,7 +15,7 @@ namespace Hylas
 
         private Func<string, GameObject> load;
 
-        private string TemplatePath => Path;
+        private string TemplatePath => Regex.Replace(Path, "^(.+/)[0-9]+(/?)", "${1}101$2");
 
         protected virtual string RelativePhysicalPath => Path;
 
@@ -25,9 +25,9 @@ namespace Hylas
 
         public GameObject Produce()
         {
-            var template = load(TemplatePath);
+            var template = load(Path) ?? load(TemplatePath);
             
-            return Produce(UnityEngine.Object.Instantiate(template).Cast<GameObject>());
+            return Produce(Object.Instantiate(template).Cast<GameObject>());
         }
 
         public static Worker Pick(string path, Func<string, GameObject> load)
