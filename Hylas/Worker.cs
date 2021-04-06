@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using MelonLoader;
+using Newtonsoft.Json;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Hylas
 {
@@ -72,8 +71,14 @@ namespace Hylas
     {
         protected override GameObject Produce(GameObject template)
         {
-            var renderer = template.GetComponent<SpriteRenderer>();
-            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
+            var (param, image) = AbsolutelyPhysicalPath.LoadSprite();
+
+            var sprite = template.GetComponent<SpriteRenderer>().sprite;
+            ImageConversion.LoadImage(sprite.texture, image);
+            sprite.rect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
+            sprite.textureRect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
+            sprite.pivot.Set(param.pivot.x, param.pivot.y);
+            sprite.border.Set(param.border.x, param.border.y, param.border.z, param.border.w);
 
             return template;
         }
