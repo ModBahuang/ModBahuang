@@ -111,15 +111,10 @@ namespace Hylas
 
         public static void LoadCustomSprite(this SpriteRenderer renderer, string path)
         {
-            var imagePath = Path.Combine(path, "image.png");
-            var paramPath = Path.Combine(path, "sprite.json");
-            
-            var param = JsonConvert.DeserializeObject<SpriteParam>(File.ReadAllText(paramPath));
-            
-            var image = File.ReadAllBytes(imagePath);
+            var (param, image) = path.LoadSprite();
 
             // LoadImage will replace with with incoming image size.
-            var tex = new Texture2D(100, 100);
+            var tex = new Texture2D(100, 100, TextureFormat.ARGB32, false);
 
             if (!ImageConversion.LoadImage(tex, image))
             {
@@ -129,6 +124,18 @@ namespace Hylas
             var newSprite = Sprite.Create(tex, param.rect, param.pivot, param.pixelsPerUnit, param.extrude, param.meshType, param.border, param.generateFallbackPhysicsShape);
 
             renderer.sprite = newSprite;
+        }
+
+        public static (SpriteParam, byte[]) LoadSprite(this string path)
+        {
+            var imagePath = Path.Combine(path, "image.png");
+            var paramPath = Path.Combine(path, "sprite.json");
+
+            var param = JsonConvert.DeserializeObject<SpriteParam>(File.ReadAllText(paramPath));
+
+            var image = File.ReadAllBytes(imagePath);
+
+            return (param, image);
         }
     }
 }
