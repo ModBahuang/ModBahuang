@@ -1,18 +1,46 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.IO;
+using System.Text.RegularExpressions;
 using MelonLoader;
 using UnityEngine;
 
 namespace Hylas
 {
+    internal static class Helper
+    {
+        public static string GetHome() => Path.Combine(MelonUtils.GameDirectory, "Mods", nameof(Hylas));
+    }
+
     internal abstract class Worker
     {
-        protected string Path;
-        
-        public string TemplatePath => Regex.Replace(Path, "^(.+/)[0-9]{3,}(/|$)", "${1}101$2");
+        private string resPath;
 
-        protected virtual string RelativePhysicalPath => Path;
+        private readonly Regex pathPattern = new Regex("^(.+/)[0-9]{3,}(/[^/]+|$)$");
 
-        protected string AbsolutelyPhysicalPath => System.IO.Path.Combine(MelonUtils.GameDirectory, "Mods", nameof(Hylas), RelativePhysicalPath);
+        public string TemplatePath
+        {
+            get
+            {
+                var templateId = "101";
+
+                var match = pathPattern.Match(resPath);
+
+                var root = match.Groups[1].Value;
+                var templateConfig = Path.Combine(Helper.GetHome(), MapPath(root), ".template.txt");
+
+                if (File.Exists(templateConfig))
+                {
+                    templateId = File.ReadAllText(templateConfig);
+                    MelonLogger.Msg($"{templateConfig}: {templateId}");
+                }
+
+                return root + templateId + match.Groups[2].Value;
+            }
+        }
+
+        protected virtual Func<string, string> MapPath => s => s;
+
+        protected string AbsolutelyPhysicalPath => Path.Combine(Helper.GetHome(), MapPath(resPath));
 
         public abstract GameObject Rework(GameObject template);
 
@@ -23,14 +51,14 @@ namespace Hylas
             {
                 worker = new ProtraitWorker
                 {
-                    Path = path
+                    resPath = path
                 };
             }
             else if (path.IsBattleHuman())
             {
                 worker = new BattleHumanWorker
                 {
-                    Path = path
+                    resPath = path
                 };
             }
 
@@ -41,7 +69,7 @@ namespace Hylas
 
     internal class ProtraitWorker : Worker
     {
-        protected override string RelativePhysicalPath => Path.Replace("Game/Portrait/", "");
+        protected override Func<string, string> MapPath => s => s.Replace("Game/Portrait/", "");
 
         public override GameObject Rework(GameObject template)
         {
