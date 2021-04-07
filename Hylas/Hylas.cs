@@ -6,90 +6,54 @@ using System.IO;
 using MelonLoader;
 using UnityEngine;
 using Newtonsoft.Json;
+using Object = UnityEngine.Object;
 
 namespace Hylas
 {
-
-#pragma warning disable 649
-    // ReSharper disable MemberCanBePrivate.Global
-    // ReSharper disable InconsistentNaming
-
-    /* Avoid serialize issue caused by unhollower */
-    internal struct Rect
+    [HarmonyPatch]
+    public class ResLoadPatch
     {
-        public Vector2 position;
-        public Vector2 size;
-
-        public static implicit operator UnityEngine.Rect(Rect v)
+        public static MethodBase TargetMethod()
         {
-            return new UnityEngine.Rect(v.position, v.size);
+            return typeof(ResMgr).GetMethods().First(m => !m.IsGenericMethod && m.Name == "Load");
         }
-    }
 
-    internal struct Vector2
-    {
-        public float x;
-        public float y;
-
-        public static implicit operator UnityEngine.Vector2(Vector2 v)
-        {
-            return new UnityEngine.Vector2(v.x, v.y);
-        }
-    }
-    internal struct Vector4
-    {
-        public float x;
-        public float y;
-        public float z;
-        public float w;
-
-        public static implicit operator UnityEngine.Vector4(Vector4 v)
-        {
-            return new UnityEngine.Vector4(v.x, v.y, v.z, v.w);
-        }
-    }
-
-    internal struct SpriteParam
-    {
-        public Rect rect; 
-        public Vector2 pivot; 
-        public float pixelsPerUnit; 
-        public uint extrude; 
-        public SpriteMeshType meshType; 
-        public Vector4 border;
-        public bool generateFallbackPhysicsShape;
-    }
-    // ReSharper restore MemberCanBePrivate.Global
-    // ReSharper restore UnassignedField.Global
-    // ReSharper restore InconsistentNaming
-#pragma warning restore 649
-
-
-    public class Hylas: MelonMod
-    {
-        public override void OnApplicationStart()
-        {
-            var load = typeof(ResMgr).GetMethods().First(m => !m.IsGenericMethod && m.Name == "Load");
-            var pre = typeof(Hylas).GetMethod(nameof(PreResLoad), BindingFlags.Public | BindingFlags.Static);
-            Harmony.Patch(load, new HarmonyMethod(pre));
-        }
-        
         // ReSharper disable once InconsistentNaming
-        public static bool PreResLoad(ref UnityEngine.Object __result, string path)
+        public static bool Prefix(ref Object __result, string path)
         {
             MelonLogger.Msg(path);
 
-            // Can't use base method directly because of the missing of reverse patch.
-            // FIXME: There is no guarantee `Load<T>` won't use `Load` internally
-            var product = Worker.Pick(path, g.res.Load<GameObject>)?.Produce();
+            var worker = Worker.Pick(path);
 
-            if (product == null) return true;
+            if (worker == null) return true;
+
+            var product = worker.Rework(Object.Instantiate(Resources.Load<GameObject>(worker.TemplatePath)));
 
             __result = product;
 
             return false;
         }
-        
+    }
+
+    [HarmonyPatch(typeof(ResMgr), "LoadAsync")]
+    public class ResLoadAsyncPatch
+    {
+        public static void Prefix(ref string path, ref Action<Object> call)
+        {
+            MelonLogger.Msg(path);
+
+            var worker = Worker.Pick(path);
+
+            if (worker == null) return;
+
+            call = obj => worker.Rework(Object.Instantiate(obj.Cast<GameObject>()));
+            path = worker.TemplatePath;
+
+        }
+    }
+
+    public class Hylas: MelonMod
+    {
     }
 
     internal static class Ext
