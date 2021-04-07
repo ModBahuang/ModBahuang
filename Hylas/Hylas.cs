@@ -54,16 +54,38 @@ namespace Hylas
     [HarmonyPatch(typeof(ResMgr), "LoadAsync")]
     public class ResLoadAsyncPatch
     {
-        public static void Prefix(ref string path, ref Action<Object> call)
+        public static bool Prefix(ref string path, Action<Object> call)
         {
+            // Use mark as a workaround to resolve the original call.
+            // Reverse patch needs to update the melonloader version.
+            const string mark = "//?/";
+
             MelonLogger.Msg(path);
+
+            if (path.StartsWith(mark))
+            {
+                path = path.Substring(mark.Length);
+                return true;
+            }
 
             var worker = Worker.Pick(path);
 
-            if (worker == null) return;
+            if (worker == null) return true;
 
-            call = obj => worker.Rework(Object.Instantiate(obj.Cast<GameObject>()));
-            path = worker.TemplatePath;
+            // It's a workaround for `call` that used in `Wrapper` got freed in Il2cpp domain
+            // I have no idea why/how this could work. But, though, anyway, it just WORKS.
+            // A reason might be the `native` will keep a gc handle to prevent `call` from freeing.
+            Il2CppSystem.Action<Object> native = call;
+
+            void Wrapper(Object obj)
+            {
+                native.Invoke(worker.Rework(obj.Cast<GameObject>()));
+            }
+
+            var a = new Action<Object>(Wrapper);
+            g.res.LoadAsync(mark + worker.TemplatePath, a);
+
+            return false;
 
         }
     }
