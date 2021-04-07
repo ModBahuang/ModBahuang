@@ -27,11 +27,27 @@ namespace Hylas
 
             if (worker == null) return true;
 
-            var product = worker.Rework(Object.Instantiate(Resources.Load<GameObject>(worker.TemplatePath)));
 
-            __result = product;
+            GameObject go = null;
+            try
+            {
+                go = Resources.Load<GameObject>(worker.TemplatePath);
 
-            return false;
+                var product = worker.Rework(go);
+
+                __result = product;
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                if (go != null)
+                    Object.Destroy(go);
+
+                MelonLogger.Error($"{e}\n{worker.TemplatePath}");
+            }
+
+            return true;
         }
     }
 
