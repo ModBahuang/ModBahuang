@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Harmony;
@@ -10,6 +11,22 @@ using Object = UnityEngine.Object;
 
 namespace Hylas
 {
+    internal static class GoCache
+    {
+        public static readonly GameObject Root;
+        public static readonly Dictionary<string, GameObject> Cache = new Dictionary<string, GameObject>();
+
+        static GoCache()
+        {
+            Root = new GameObject
+            {
+                name = "hylas cache",
+                active = false
+            };
+            Object.DontDestroyOnLoad(Root);
+        }
+    }
+
     [HarmonyPatch]
     public class ResLoadPatch
     {
@@ -29,13 +46,23 @@ namespace Hylas
 
             var tp = worker.TemplatePath;
 
+
+
             try
             {
-                var p = new GameObject {active = false};
-                var go = Object.Instantiate(Resources.Load<GameObject>(tp), p.transform);
+                GameObject product;
+                if (GoCache.Cache.ContainsKey(tp))
+                {
+                    product = worker.Rework(GoCache.Cache[tp]);
+                }
+                else
+                {
+                    var go = Object.Instantiate(Resources.Load<GameObject>(tp), GoCache.Root.transform);
+                    GoCache.Cache.Add(tp, go);
 
-                var product = worker.Rework(go);
-                
+                    product = worker.Rework(go);
+                }
+
                 __result = product;
             }
             catch (Exception e)
