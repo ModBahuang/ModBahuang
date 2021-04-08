@@ -27,27 +27,23 @@ namespace Hylas
 
             if (worker == null) return true;
 
+            var tp = worker.TemplatePath;
 
-            GameObject go = null;
             try
             {
-                go = Resources.Load<GameObject>(worker.TemplatePath);
+                var p = new GameObject {active = false};
+                var go = Object.Instantiate(Resources.Load<GameObject>(tp), p.transform);
 
                 var product = worker.Rework(go);
-
+                
                 __result = product;
-
-                return false;
             }
             catch (Exception e)
             {
-                if (go != null)
-                    Object.Destroy(go);
-
-                MelonLogger.Error($"{e}\n{worker.TemplatePath}");
+                MelonLogger.Error($"{e}\n{tp}");
             }
 
-            return true;
+            return false;
         }
     }
 
@@ -72,6 +68,8 @@ namespace Hylas
 
             if (worker == null) return true;
 
+            var tp = worker.TemplatePath;
+
             // It's a workaround for `call` that used in `Wrapper` got freed in Il2cpp domain
             // I have no idea why/how this could work. But, though, anyway, it just WORKS.
             // A reason might be the `native` will keep a gc handle to prevent `call` from freeing.
@@ -79,14 +77,15 @@ namespace Hylas
 
             void Wrapper(Object obj)
             {
-                native.Invoke(worker.Rework(obj.Cast<GameObject>()));
+                var p = new GameObject { active = false };
+                var go = Object.Instantiate(obj.Cast<GameObject>(), p.transform);
+                native.Invoke(worker.Rework(go));
             }
 
             var a = new Action<Object>(Wrapper);
-            g.res.LoadAsync(mark + worker.TemplatePath, a);
+            g.res.LoadAsync(mark + tp, a);
 
             return false;
-
         }
     }
 
