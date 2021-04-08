@@ -21,7 +21,7 @@ namespace Hylas
         // ReSharper disable once InconsistentNaming
         public static bool Prefix(ref Object __result, string path)
         {
-            MelonLogger.Msg(path);
+            MelonDebug.Msg(path);
 
             var worker = Worker.Pick(path);
 
@@ -56,7 +56,7 @@ namespace Hylas
             // Reverse patch needs to update the melonloader version.
             const string mark = "//?/";
 
-            MelonLogger.Msg(path);
+            MelonDebug.Msg(path);
 
             if (path.StartsWith(mark))
             {
@@ -80,16 +80,24 @@ namespace Hylas
                 var p = new GameObject { active = false };
                 var go = Object.Instantiate(obj.Cast<GameObject>(), p.transform);
                 native.Invoke(worker.Rework(go));
+                Object.Destroy(p);
             }
 
-            var a = new Action<Object>(Wrapper);
-            g.res.LoadAsync(mark + tp, a);
+            if (GoCache.Cache.ContainsKey(tp))
+            {
+                native.Invoke(worker.Rework(GoCache.Cache[tp]));
+            }
+            else
+            {
+                var a = new Action<Object>(Wrapper);
+                g.res.LoadAsync(mark + tp, a);
+            }
 
             return false;
         }
     }
 
-    public class Hylas: MelonMod
+    public class Hylas : MelonMod
     {
     }
 
