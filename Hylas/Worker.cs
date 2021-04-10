@@ -86,7 +86,7 @@ namespace Hylas
         {
             var (param, image) = AbsolutelyPhysicalPath.LoadSprite();
 
-            var sprite = template.GetComponent<SpriteRenderer>().sprite;
+            var sprite = template.GetComponentInChildren<SpriteRenderer>().sprite;
             ImageConversion.LoadImage(sprite.texture, image);
             sprite.rect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
             sprite.textureRect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
