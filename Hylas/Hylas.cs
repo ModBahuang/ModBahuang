@@ -160,20 +160,29 @@ namespace Hylas
             }
         }
     }
-        }
-    }
 
-    [HarmonyPatch]
-    public class ResLoadPatch
+    public static class ResourcesLoadPatch
     {
-        public static MethodBase TargetMethod()
+        private delegate IntPtr Load(IntPtr path, IntPtr systemTypeInstance);
+
+        private static readonly Load _load;
+
+        static ResourcesLoadPatch()
         {
-            return typeof(ResMgr).GetMethods().First(m => !m.IsGenericMethod && m.Name == "Load");
+            _load = IL2CPP.ResolveICall<Load>("UnityEngine.Resources::Load(System.String,System.Type)");
+        }
+
+        public static void Patch(HarmonyInstance harmony)
+        {
+            var original = typeof(Resources).GetMethod("Load", new[] { typeof(string), typeof(Il2CppSystem.Type) });
+            harmony.Patch(original, prefix: new HarmonyMethod(typeof(ResourcesLoadPatch).GetMethod(nameof(Prefix))));
         }
 
         // ReSharper disable once InconsistentNaming
-        public static bool Prefix(ref Object __result, string path)
+        // ReSharper disable once RedundantAssignment
+        public static bool Prefix(ref Object __result, string path, Il2CppSystem.Type systemTypeInstance)
         {
+            MelonLogger.Msg($"{path}, {systemTypeInstance.Name}");
             MelonDebug.Msg(path);
 
             var worker = Worker.Pick(path);
@@ -188,7 +197,11 @@ namespace Hylas
 
                 if (__result == null)
                 {
-                    __result = GoCache.Add(pp, Resources.Load<GameObject>(tp), worker);
+                    var obj = _load(IL2CPP.ManagedStringToIl2Cpp(tp), IL2CPP.Il2CppObjectBaseToPtrNotNull(systemTypeInstance));
+
+                    // Will throw an exception when obj is null
+                    var go = new Object(obj).Cast<GameObject>();
+                    __result = GoCache.Add(pp, go, worker);
                 }
 
             }
@@ -252,6 +265,10 @@ namespace Hylas
 
     public class Hylas : MelonMod
     {
+        public override void OnApplicationStart()
+        {
+            ResourcesLoadPatch.Patch(Harmony);
+        }
     }
 
     internal static class Ext
