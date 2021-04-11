@@ -31,7 +31,7 @@ namespace Hylas
                 if (File.Exists(templateConfig))
                 {
                     templateId = File.ReadAllText(templateConfig);
-                    MelonLogger.Msg($"{templateConfig}: {templateId}");
+                    MelonDebug.Msg($"{templateConfig}: {templateId}");
                 }
 
                 return root + templateId + match.Groups[2].Value;
@@ -40,7 +40,7 @@ namespace Hylas
 
         protected virtual Func<string, string> MapPath => s => s;
 
-        protected string AbsolutelyPhysicalPath => Path.Combine(Helper.GetHome(), MapPath(resPath));
+        public string AbsolutelyPhysicalPath => Path.GetFullPath(Path.Combine(Helper.GetHome(), MapPath(resPath)));
 
         public abstract GameObject Rework(GameObject template);
 
