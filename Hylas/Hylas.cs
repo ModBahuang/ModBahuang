@@ -4,26 +4,162 @@ using System.Linq;
 using System.Reflection;
 using Harmony;
 using System.IO;
+using System.Threading;
 using MelonLoader;
 using UnityEngine;
 using Newtonsoft.Json;
+using UnhollowerBaseLib;
 using Object = UnityEngine.Object;
 
 namespace Hylas
 {
     internal static class GoCache
     {
-        public static readonly GameObject Root;
-        public static readonly Dictionary<string, GameObject> Cache = new Dictionary<string, GameObject>();
+        private class Cached
+        {
+            private const int TRUE = 1;
+            private const int FALSE = 0;
+
+            private int expired = FALSE;
+            private readonly GameObject go;
+            private readonly Worker worker;
+            private readonly ReaderWriterLockSlim goLock = new ReaderWriterLockSlim();
+
+            public Cached(GameObject go, Worker worker)
+            {
+                this.go = go;
+                this.worker = worker;
+            }
+
+            public GameObject Get()
+            {
+                if (Interlocked.CompareExchange(ref expired, FALSE, TRUE) == TRUE)
+                {
+                    MelonLogger.Msg($"renew {worker.AbsolutelyPhysicalPath}");
+                    goLock.EnterWriteLock();
+                    try
+                    {
+                        return worker.Rework(go);
+                    }
+                    finally
+                    {
+                        goLock.ExitWriteLock();
+                    }
+                }
+
+                goLock.EnterReadLock();
+                try
+                {
+                    return go;
+                }
+                finally
+                {
+                    goLock.ExitReadLock();
+                }
+            }
+
+            public void Expire()
+            {
+                Interlocked.Exchange(ref expired, TRUE);
+            }
+        }
+
+        private static readonly ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
+
+        private static readonly GameObject _root;
+
+        private static readonly Dictionary<string, Cached> _cache = new Dictionary<string, Cached>();
+
+        private static readonly FileSystemWatcher _watcher = new FileSystemWatcher(Helper.GetHome());
 
         static GoCache()
         {
-            Root = new GameObject
+            _root = new GameObject
             {
                 name = "hylas cache",
                 active = false
             };
-            Object.DontDestroyOnLoad(Root);
+            Object.DontDestroyOnLoad(_root);
+
+            _watcher.NotifyFilter = NotifyFilters.Attributes
+                                    | NotifyFilters.DirectoryName
+                                    | NotifyFilters.FileName
+                                    | NotifyFilters.LastWrite
+                                    | NotifyFilters.Security
+                                    | NotifyFilters.Size;
+
+            _watcher.Changed += Handler;
+            _watcher.Created += Handler;
+            _watcher.Renamed += Handler;
+            _watcher.Deleted += Handler;
+            _watcher.Error += OnError;
+
+            _watcher.IncludeSubdirectories = true;
+            _watcher.EnableRaisingEvents = true;
+            _watcher.Filter = "*.*";
+
+        }
+
+        private static void OnError(object sender, ErrorEventArgs e)
+        {
+            MelonLogger.Error($"{e.GetException()}");
+        }
+
+        private static void Handler(object sender, FileSystemEventArgs e)
+        {
+            MelonLogger.Msg($"{e.Name} {e.ChangeType} {e.FullPath}");
+
+            _cacheLock.EnterReadLock();
+            try
+            {
+                var dir = Path.GetDirectoryName(e.Name) ?? throw new InvalidOperationException();
+
+                if (!_cache.ContainsKey(dir)) return;
+
+                _cache[dir].Expire();
+                throw new NotImplementedException();
+            }
+            finally
+            {
+                _cacheLock.ExitReadLock();
+            }
+        }
+
+        public static GameObject Get(string path)
+        {
+            _cacheLock.EnterReadLock();
+
+            try
+            {
+                return _cache.TryGetValue(path, out var cached) ? cached.Get() : null;
+            }
+            finally
+            {
+                _cacheLock.ExitReadLock();
+            }
+        }
+
+        public static GameObject Add(string path, GameObject go, Worker worker)
+        {
+            var go2 = Get(path);
+            if (go2 != null)
+            {
+                return go2;
+            }
+
+            _cacheLock.EnterWriteLock();
+            try
+            {
+                var tmp = worker.Rework(Object.Instantiate(go, _root.transform));
+                _cache.Add(path, new Cached(tmp, worker));
+                return tmp;
+            }
+            finally
+            {
+                _cacheLock.ExitWriteLock();
+            }
+        }
+    }
         }
     }
 
@@ -44,26 +180,17 @@ namespace Hylas
 
             if (worker == null) return true;
 
+            var pp = worker.AbsolutelyPhysicalPath;
             var tp = worker.TemplatePath;
-
-
-
             try
             {
-                GameObject product;
-                if (GoCache.Cache.ContainsKey(tp))
-                {
-                    product = worker.Rework(GoCache.Cache[tp]);
-                }
-                else
-                {
-                    var go = Object.Instantiate(Resources.Load<GameObject>(tp), GoCache.Root.transform);
-                    GoCache.Cache.Add(tp, go);
+                __result = GoCache.Get(pp);
 
-                    product = worker.Rework(go);
+                if (__result == null)
+                {
+                    __result = GoCache.Add(pp, Resources.Load<GameObject>(tp), worker);
                 }
 
-                __result = product;
             }
             catch (Exception e)
             {
@@ -95,6 +222,7 @@ namespace Hylas
 
             if (worker == null) return true;
 
+            var pp = worker.AbsolutelyPhysicalPath;
             var tp = worker.TemplatePath;
 
             // It's a workaround for `call` that used in `Wrapper` got freed in Il2cpp domain
@@ -104,15 +232,13 @@ namespace Hylas
 
             void Wrapper(Object obj)
             {
-                var p = new GameObject { active = false };
-                var go = Object.Instantiate(obj.Cast<GameObject>(), p.transform);
-                native.Invoke(worker.Rework(go));
-                Object.Destroy(p);
+                native.Invoke(GoCache.Add(pp, obj.Cast<GameObject>(), worker));
             }
 
-            if (GoCache.Cache.ContainsKey(tp))
+            var product = GoCache.Get(pp);
+            if (product != null)
             {
-                native.Invoke(worker.Rework(GoCache.Cache[tp]));
+                native.Invoke(product);
             }
             else
             {
