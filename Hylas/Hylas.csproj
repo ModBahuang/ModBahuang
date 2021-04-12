@@ -70,9 +70,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GoCache.cs" />
     <Compile Include="Hylas.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResLoadAsyncPatch.cs" />
+    <Compile Include="ResourcesLoadPatch.cs" />
     <Compile Include="SpriteParam.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="Worker.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

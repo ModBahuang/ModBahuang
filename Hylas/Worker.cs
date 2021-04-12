@@ -6,11 +6,6 @@ using UnityEngine;
 
 namespace Hylas
 {
-    internal static class Helper
-    {
-        public static string GetHome() => Path.Combine(MelonUtils.GameDirectory, "Mods", nameof(Hylas));
-    }
-
     internal abstract class Worker
     {
         private string resPath;
@@ -26,7 +21,7 @@ namespace Hylas
                 var match = pathPattern.Match(resPath);
 
                 var root = match.Groups[1].Value;
-                var templateConfig = Path.Combine(Helper.GetHome(), MapPath(root), ".template.txt");
+                var templateConfig = Path.Combine(Utils.GetHylasHome(), MapPath(root), ".template.txt");
 
                 if (File.Exists(templateConfig))
                 {
@@ -40,7 +35,7 @@ namespace Hylas
 
         protected virtual Func<string, string> MapPath => s => s;
 
-        public string AbsolutelyPhysicalPath => Path.GetFullPath(Path.Combine(Helper.GetHome(), MapPath(resPath)));
+        protected string AbsolutelyPhysicalPath => Path.GetFullPath(Path.Combine(Utils.GetHylasHome(), MapPath(resPath)));
 
         public abstract GameObject Rework(GameObject template);
 
@@ -62,7 +57,7 @@ namespace Hylas
                 };
             }
 
-            return worker?.AbsolutelyPhysicalPath.Exist() == true ? worker : null;
+            return worker;
             
         }
     }
