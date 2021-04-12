@@ -8,11 +8,11 @@ namespace Hylas
 {
     internal abstract class Worker
     {
-        private string resPath;
+        protected string resPath;
 
         private readonly Regex pathPattern = new Regex("^(.+/)[0-9]{3,}(/[^/]+|$)$");
 
-        public string TemplatePath
+        public virtual string TemplatePath
         {
             get
             {
@@ -55,10 +55,29 @@ namespace Hylas
                 {
                     resPath = path
                 };
+            } else if (path == "Effect/UI/Shuangxiu")
+            {
+                worker = new CommonWorker()
+                {
+                    resPath = path
+                };
             }
 
             return worker;
             
+        }
+    }
+
+    internal class CommonWorker : Worker
+    {
+        public override string TemplatePath => resPath;
+
+        public override GameObject Rework(GameObject template)
+        {
+            var renderer = template.GetComponentInChildren<SpriteRenderer>();
+            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
+
+            return template;
         }
     }
 
