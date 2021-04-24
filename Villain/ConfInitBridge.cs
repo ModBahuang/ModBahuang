@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MelonLoader;
 using Newtonsoft.Json;
+using UnhollowerBaseLib;
 
 namespace Villain
 {
@@ -122,8 +123,36 @@ namespace Villain
                         var field = p.Item1;
 
                         writer.WritePropertyName(field.Name);
-                        // Assume all fields are serialized by writer
-                        writer.WriteValue(field.GetValue(it));
+
+                        var v = field.GetValue(it);
+                        // FIXME: It's a temporarily way and should be fixed later
+                        if (field.PropertyType == typeof(Il2CppStructArray<int>))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var n in (Il2CppStructArray<int>)v)
+                            {
+                                writer.WriteValue(n);
+                            }
+                            writer.WriteEndArray();
+                        } 
+                        else if (field.PropertyType == typeof(Il2CppReferenceArray<Il2CppStructArray<float>>))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var a in (Il2CppReferenceArray<Il2CppStructArray<float>>)v)
+                            {
+                                writer.WriteStartArray();
+                                foreach (var f in a)
+                                {
+                                    writer.WriteValue(f);
+                                }
+                                writer.WriteEndArray();
+                            }
+                            writer.WriteEndArray();
+                        }
+                        else
+                        {
+                            writer.WriteValue(v);
+                        }
                     }
 
                     writer.WriteEndObject();

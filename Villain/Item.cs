@@ -12,7 +12,7 @@ namespace Villain
 {
     internal class Item
     {
-        private readonly struct Value
+        private class Value
         {
             private enum ValueType
             {
@@ -28,7 +28,9 @@ namespace Villain
                 Char,
                 Double,
                 Single,
-                String
+                String,
+                IntArray,
+                Float2DArray
             }
 
             private readonly ValueType tag;
@@ -46,10 +48,12 @@ namespace Villain
             private readonly double @double;
             private readonly float @float;
             private readonly IntPtr @string;
+            private readonly Il2CppStructArray<int> intArray;
+            private readonly Il2CppReferenceArray<Il2CppStructArray<float>> float2DArray;
 
             public bool IsNone { get; }
 
-            public Value(Type type, JValue value)
+            public Value(Type type, JToken value)
             {
                 IsNone = value == null;
 
@@ -66,6 +70,8 @@ namespace Villain
                 @double = default;
                 @float = default;
                 @string = IL2CPP.ManagedStringToIl2Cpp("");
+                intArray = default;
+                float2DArray = default;
 
                 if (type == typeof(string))
                 {
@@ -150,6 +156,28 @@ namespace Villain
                     tag = ValueType.Single;
                     if (value == null) return;
                     @float = value.Value<float>();
+                } 
+                else if (type == typeof(Il2CppStructArray<int>))
+                {
+                    tag = ValueType.IntArray;
+                    if (value == null) return;
+                    var arr = value.Value<JArray>().Select(t => t.Value<int>()).ToArray();
+                    intArray = arr;
+                } 
+                else if (type == typeof(Il2CppReferenceArray<Il2CppStructArray<float>>))
+                {
+                    tag = ValueType.Float2DArray;
+                    if (value == null) return;
+                    var arr = value.Value<JArray>()
+                        .Select(t =>
+                        {
+                            Il2CppStructArray<float> arr2 = t.Value<JArray>()
+                                .Select(t2 => t2.Value<float>())
+                                .ToArray();
+                            return arr2;
+                        })
+                        .ToArray();
+                    float2DArray = arr;
                 }
                 else
                 {
@@ -187,6 +215,10 @@ namespace Villain
                         fixed (double* p = &@double) { return (IntPtr)p; }
                     case ValueType.Single:
                         fixed (float* p = &@float) { return (IntPtr)p; }
+                    case ValueType.IntArray:
+                        return intArray.Pointer;
+                    case ValueType.Float2DArray:
+                        return float2DArray.Pointer;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -205,7 +237,9 @@ namespace Villain
                 Action<ulong> f10,
                 Action<char> f11,
                 Action<double> f12,
-                Action<float> f13)
+                Action<float> f13,
+                Action<Il2CppStructArray<int>> f14,
+                Action<Il2CppReferenceArray<Il2CppStructArray<float>>> f15)
             {
                 switch (tag)
                 {
@@ -247,6 +281,12 @@ namespace Villain
                         break;
                     case ValueType.Single:
                         f13(@float);
+                        break;
+                    case ValueType.IntArray:
+                        f14(intArray);
+                        break;
+                    case ValueType.Float2DArray:
+                        f15(float2DArray);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -310,7 +350,7 @@ namespace Villain
             var values = record.FieldsInfo.Select(a =>
             {
                 var p = a.Item1;
-                var v = new Value(p.PropertyType, obj.GetValue(p.Name)?.Value<JValue>());
+                var v = new Value(p.PropertyType, obj.GetValue(p.Name));
                 return v;
             }).ToArray();
 
@@ -355,7 +395,9 @@ namespace Villain
                         ulong1 => *(ulong*)ptr = ulong1,
                         char1 => *(char*)ptr = char1,
                         double1 => *(double*)ptr = double1,
-                        float1 => *(float*)ptr = float1
+                        float1 => *(float*)ptr = float1,
+                        intArray => *(IntPtr*)ptr = intArray.Pointer,
+                        float2D => *(IntPtr*)ptr = float2D.Pointer
                     );
                 }
             }
@@ -376,26 +418,24 @@ namespace Villain
 
                 var id = Id;
                 args[0] = (IntPtr) (&id);
-
-                fixed(Value* arr = values)
+                
+                for (var i = 1; i < paramLen; i++)
                 {
-                    for (var i = 1; i < paramLen; i++)
+                    var j = i - 1;
+                    var v = values[j];
+
+                    if (v.IsNone)
                     {
-                        var j = i - 1;
-                        var v = &arr[j];
-
-                        if (v->IsNone)
-                        {
-                            Logger.Warn($"Required field({record.FieldsInfo[j].Item1}) does not exsit in item(id: {Id}, @ {Source}), set to default.");
-                        }
-
-                        // FIXME: Is it REALLY safe?
-                        args[i] = v->Ptr();
+                        Logger.Warn($"Required field({record.FieldsInfo[j].Item1}) does not exsit in item(id: {Id}, @ {Source}), set to default.");
                     }
-                    var exc = IntPtr.Zero;
-                    IL2CPP.il2cpp_runtime_invoke(record.ItemCtor.Item2, IL2CPP.Il2CppObjectBaseToPtrNotNull(obj), (void**)args, ref exc);
-                    Il2CppException.RaiseExceptionIfNecessary(exc);
+
+                    // FIXME: values could be moved by JIT
+                    args[i] = v.Ptr();
                 }
+                var exc = IntPtr.Zero;
+                IL2CPP.il2cpp_runtime_invoke(record.ItemCtor.Item2, IL2CPP.Il2CppObjectBaseToPtrNotNull(obj), (void**)args, ref exc);
+                Il2CppException.RaiseExceptionIfNecessary(exc);
+                
                 
             }
 

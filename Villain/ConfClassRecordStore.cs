@@ -206,12 +206,13 @@ namespace Villain
                     .Where(c => c.Parameters[1].Name == "id" && c.Parameters[1].Type.TypeName == "Int32")
                     .Where(c =>
                     {
-                        return c.Parameters.Skip(1).Zip(info.GetParameters(), (a, b) => (a, b))
-                            .All(p => p.a.Name == p.b.Name && p.a.Type.TypeName == p.b.ParameterType.Name);
+                        return c.Parameters.Skip(1)
+                            .Zip(info.GetParameters(), (a, b) => (a, b))
+                            .All(p => p.a.Name == p.b.Name);
                     })
                     .ToArray();
 
-                Logger.Assert(cs.Length == 1, () => $"Must have only 1 proper constructor({cs.Length})");
+                Logger.Assert(cs.Length == 1, () => $"Must have only 1 proper constructor({cs.Length}) @ {itemType}");
 
                 var ctor = cs[0];
 
