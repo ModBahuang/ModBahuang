@@ -9,7 +9,7 @@ namespace Villain
 {
     public class Villain : MelonMod
     {
-        public override void OnApplicationLateStart()
+        public override void OnApplicationStart()
         {
             if (Env.IsGameUpdated)
             {
