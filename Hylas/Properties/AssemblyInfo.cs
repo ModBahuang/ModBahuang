@@ -33,10 +33,10 @@ using MelonLoader;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.0.3.2")]
-[assembly: AssemblyFileVersion("0.0.3.2")]
+[assembly: AssemblyVersion("0.0.3.3")]
+[assembly: AssemblyFileVersion("0.0.3.3")]
 
-[assembly: MelonInfo(typeof(Hylas.Hylas), "Hylas", "0.3.2", "A")]
+[assembly: MelonInfo(typeof(Hylas.Hylas), "Hylas", "0.3.3", "A")]
 [assembly: MelonColor]
 
 [assembly: MelonGame]
