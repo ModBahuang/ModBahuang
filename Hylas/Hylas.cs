@@ -45,19 +45,26 @@ namespace Hylas
 
         public static void LoadCustomSprite(this SpriteRenderer renderer, string path)
         {
-            var (param, image) = path.LoadSprite();
-
-            // LoadImage will replace with with incoming image size.
-            var tex = new Texture2D(100, 100, TextureFormat.ARGB32, false);
-
-            if (!ImageConversion.LoadImage(tex, image))
+            try
             {
-                throw new InvalidOperationException();
+                var (param, image) = path.LoadSprite();
+
+                // LoadImage will replace with with incoming image size.
+                var tex = new Texture2D(100, 100, TextureFormat.ARGB32, false);
+
+                if (!ImageConversion.LoadImage(tex, image))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                var newSprite = Sprite.Create(tex, param.rect, param.pivot, param.pixelsPerUnit, param.extrude, param.meshType, param.border, param.generateFallbackPhysicsShape);
+
+                renderer.sprite = newSprite;
             }
-
-            var newSprite = Sprite.Create(tex, param.rect, param.pivot, param.pixelsPerUnit, param.extrude, param.meshType, param.border, param.generateFallbackPhysicsShape);
-
-            renderer.sprite = newSprite;
+            catch (Exception e)
+            {
+                MelonLogger.Warning($"Loading custom sprite [{path}] encountered exception: {e.Message}");
+            }
         }
 
         public static (SpriteParam, byte[]) LoadSprite(this string path)

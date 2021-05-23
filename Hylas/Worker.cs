@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using MelonLoader;
@@ -11,6 +12,15 @@ namespace Hylas
         protected string resPath;
 
         private readonly Regex pathPattern = new Regex("^(.+/)[0-9]{3,}(/[^/]+|$)$");
+
+        private static readonly Dictionary<Regex, Type> _worker_type = new Dictionary<Regex, Type>();
+
+        static Worker()
+        {
+            _worker_type.Add(new Regex("^Game/Portrait/.*$"), typeof(ProtraitWorker));
+            _worker_type.Add(new Regex("^Battle/Human/.*$"), typeof(BattleHumanWorker));
+            _worker_type.Add(new Regex("^Effect/UI/.*$"), typeof(CommonWorker));
+        }
 
         public virtual string TemplatePath
         {
@@ -37,12 +47,27 @@ namespace Hylas
 
         protected string AbsolutelyPhysicalPath => Path.GetFullPath(Path.Combine(Utils.GetHylasHome(), MapPath(resPath)));
 
-        public abstract GameObject Rework(GameObject template);
+        public virtual GameObject Rework(GameObject template)
+        {
+            var renderer = template.GetComponentInChildren<SpriteRenderer>();
+            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
+
+            return template;
+        }
 
         public static Worker Pick(string path)
         {
             Worker worker = null;
-            if (path.IsPortrait())
+            foreach (var key in _worker_type.Keys)
+            {
+                if (key.IsMatch(path))
+                {
+                    worker = (Worker)Activator.CreateInstance(_worker_type[key]);
+                    worker.resPath = path;
+                    break;
+                }
+            }
+            /*if (path.IsPortrait())
             {
                 worker = new ProtraitWorker
                 {
@@ -61,37 +86,21 @@ namespace Hylas
                 {
                     resPath = path
                 };
-            }
+            }*/
 
             return worker;
-            
+
         }
     }
 
     internal class CommonWorker : Worker
     {
         public override string TemplatePath => resPath;
-
-        public override GameObject Rework(GameObject template)
-        {
-            var renderer = template.GetComponentInChildren<SpriteRenderer>();
-            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
-
-            return template;
-        }
     }
 
     internal class ProtraitWorker : Worker
     {
         protected override Func<string, string> MapPath => s => s.Replace("Game/Portrait/", "");
-
-        public override GameObject Rework(GameObject template)
-        {
-            var renderer = template.GetComponentInChildren<SpriteRenderer>();
-            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
-
-            return template;
-        }
     }
 
     internal class BattleHumanWorker : Worker
