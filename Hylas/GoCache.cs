@@ -1,8 +1,8 @@
-﻿using System;
+﻿using MelonLoader;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using MelonLoader;
 using UnhollowerRuntimeLib;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -19,8 +19,8 @@ namespace Hylas
             private int expired = FALSE;
 
             private readonly ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
-            
-            private GameObject go;
+
+            private Object go;
             private readonly Worker worker;
             private readonly GameObject root;
 
@@ -32,7 +32,7 @@ namespace Hylas
                 Update();
             }
 
-            public GameObject Get()
+            public Object Get()
             {
                 if (Interlocked.CompareExchange(ref expired, FALSE, TRUE) == TRUE)
                 {
@@ -67,12 +67,18 @@ namespace Hylas
 
             private void Update()
             {
-                var template = Utils.ResourcesLoad(worker.TemplatePath, Il2CppType.Of<GameObject>()).Cast<GameObject>();
+                var template = Utils.ResourcesLoad(worker.TemplatePath, worker.Type);
                 if (template == null)
                 {
                     throw new ArgumentException($"{worker.TemplatePath} Not Found");
                 }
+                MelonLogger.Msg($"template:({template.name})");
                 go = worker.Rework(Object.Instantiate(template, root.transform));
+                if (go == null)
+                {
+                    MelonLogger.Error($"{worker.TemplatePath} rework failed");
+                }
+                MelonLogger.Msg($"go:({go.name})");
             }
         }
 
@@ -145,7 +151,7 @@ namespace Hylas
             {
                 MelonLogger.Error(ex);
             }
-            
+
         }
 
         public static bool TryGet(string path, out Object go)
@@ -170,14 +176,21 @@ namespace Hylas
             {
                 var path = Utils.GetResourcePath(file);
 
-                MelonDebug.Msg($"{path}");
+                MelonDebug.Msg($"Prefetch: {path}");
                 var worker = Worker.Pick(path);
                 if (worker == null)
                 {
                     MelonLogger.Warning($"Worker Not Found, path = {path}");
                     continue;
                 }
-                _cache.Add(path, new Cached(worker, _root));
+                try
+                {
+                    _cache.Add(path, new Cached(worker, _root));
+                }
+                catch(Exception e)
+                {
+                    MelonLogger.Warning($"Cache failed, path = {path}, \nreason: {e}");
+                }
             }
         }
 
@@ -202,6 +215,10 @@ namespace Hylas
                     try
                     {
                         _cache.Add(path, new Cached(worker, _root));
+                    }
+                    catch (Exception e)
+                    {
+                        MelonLogger.Warning($"Cache failed, path = {path}, \nreason: {e}");
                     }
                     finally
                     {
