@@ -23,6 +23,8 @@ namespace Hylas
             MelonDebug.Msg($"Resources::Load({path}, {systemTypeInstance.Name})");
 
             var exist = GoCache.TryGet(path, out __result);
+            if (exist)
+                MelonLogger.Msg($"Resources:({__result.name} {__result.GetInstanceID()})");
 
             return !exist;
         }
