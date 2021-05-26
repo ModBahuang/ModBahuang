@@ -120,6 +120,16 @@ namespace Hylas
             sprite.textureRect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
             sprite.pivot.Set(param.pivot.x, param.pivot.y);
             sprite.border.Set(param.border.x, param.border.y, param.border.z, param.border.w);
+            // 袖子 暂时先去掉
+            var nodes = template.GetComponentsInChildren<Transform>();
+            foreach (Transform child in nodes)
+            {
+                if (child.name == "youbi_1")
+                {
+                    child.gameObject.active = false;
+                    break;
+                }
+            }
 
             return template.Cast<T>();
         }
