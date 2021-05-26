@@ -72,19 +72,23 @@ namespace Hylas
                 {
                     throw new ArgumentException($"{worker.TemplatePath} Not Found");
                 }
-                MelonLogger.Msg($"template:({template.name})");
-                go = worker.Rework(Object.Instantiate(template, root.transform));
-                if (go == null)
+                if (worker.Type != Il2CppType.Of<GameObject>())
                 {
-                    MelonLogger.Error($"{worker.TemplatePath} rework failed");
+                    var t = GoCache._goTemplate;
+                    t.name = template.name;
+                    go = worker.Rework(Object.Instantiate(t, root.transform), template);
                 }
-                MelonLogger.Msg($"go:({go.name})");
+                else
+                {
+                    go = worker.Rework(Object.Instantiate(template.Cast<GameObject>(), root.transform), template);
+                }
             }
         }
 
         private static readonly ReaderWriterLockSlim _cacheLock = new ReaderWriterLockSlim();
 
         private static readonly GameObject _root;
+        private static readonly GameObject _goTemplate;   // 给 Sprite 等套层 GameObject
 
         private static readonly Dictionary<string, Cached> _cache = new Dictionary<string, Cached>();
 
@@ -98,6 +102,12 @@ namespace Hylas
                 active = false
             };
             Object.DontDestroyOnLoad(_root);
+            _goTemplate = new GameObject
+            {
+                name = "template",
+                active = false
+            };
+            Object.DontDestroyOnLoad(_goTemplate);
 
             _watcher.NotifyFilter = NotifyFilters.Attributes
                                     | NotifyFilters.DirectoryName
@@ -187,7 +197,7 @@ namespace Hylas
                 {
                     _cache.Add(path, new Cached(worker, _root));
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     MelonLogger.Warning($"Cache failed, path = {path}, \nreason: {e}");
                 }
