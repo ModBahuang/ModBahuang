@@ -37,7 +37,7 @@ namespace Hylas
             }
         }
 
-        public abstract T Rework<T>(T template) where T : UnityEngine.Object;
+        public abstract T Rework<T>(GameObject template, T marker) where T : UnityEngine.Object;
 
         public static Worker Pick(string path)
         {
@@ -63,9 +63,8 @@ namespace Hylas
     internal class GameObjectWorker : Worker
     {
 
-        public override T Rework<T>(T t)
+        public override T Rework<T>(GameObject template, T marker)
         {
-            GameObject template = t.Cast<GameObject>();
             var renderer = template.GetComponentInChildren<SpriteRenderer>();
             renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
 
@@ -108,9 +107,8 @@ namespace Hylas
     internal class BattleHumanWorker : GameObjectWorker
     {
 
-        public override T Rework<T>(T t)
+        public override T Rework<T>(GameObject template, T marker)
         {
-            GameObject template = t.Cast<GameObject>();
             var (param, image) = AbsolutelyPhysicalPath.LoadSprite();
 
             var sprite = template.GetComponentInChildren<SpriteRenderer>().sprite;
@@ -137,23 +135,13 @@ namespace Hylas
             }
         }
 
-        public override T Rework<T>(T t)
+        public override T Rework<T>(GameObject template, T marker)
         {
-            Sprite sprite = t.Cast<Sprite>();
-            MelonLogger.Msg($"sprite:({sprite.name} {sprite.texture})");
+            template.AddComponent(Il2CppType.Of<SpriteRenderer>());
+            var renderer = template.GetComponentInChildren<SpriteRenderer>();
+            renderer.LoadCustomSprite(AbsolutelyPhysicalPath);
 
-            var (param, image) = AbsolutelyPhysicalPath.LoadSprite();
-
-            if (!ImageConversion.LoadImage(sprite.texture, image))
-            {
-                throw new InvalidOperationException();
-            }
-            sprite.rect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
-            sprite.textureRect.Set(param.rect.position.x, param.rect.position.y, param.rect.size.x, param.rect.size.y);
-            sprite.pivot.Set(param.pivot.x, param.pivot.y);
-            sprite.border.Set(param.border.x, param.border.y, param.border.z, param.border.w);
-
-            return sprite.Cast<T>();
+            return renderer.sprite.Cast<T>();
         }
     }
 }
