@@ -1,13 +1,10 @@
-﻿using System;
+﻿using MelonLoader;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using MelonLoader;
-using Newtonsoft.Json;
 using UnhollowerBaseLib;
 
 namespace Villain
@@ -134,7 +131,16 @@ namespace Villain
                                 writer.WriteValue(n);
                             }
                             writer.WriteEndArray();
-                        } 
+                        }
+                        else if (field.PropertyType == typeof(Il2CppStringArray))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var str in (Il2CppStringArray)v)
+                            {
+                                writer.WriteValue(str);
+                            }
+                            writer.WriteEndArray();
+                        }
                         else if (field.PropertyType == typeof(Il2CppReferenceArray<Il2CppStructArray<float>>))
                         {
                             writer.WriteStartArray();
@@ -144,6 +150,34 @@ namespace Villain
                                 foreach (var f in a)
                                 {
                                     writer.WriteValue(f);
+                                }
+                                writer.WriteEndArray();
+                            }
+                            writer.WriteEndArray();
+                        }
+                        else if (field.PropertyType == typeof(Il2CppReferenceArray<Il2CppStructArray<int>>))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var ia in (Il2CppReferenceArray<Il2CppStructArray<int>>)v)
+                            {
+                                writer.WriteStartArray();
+                                foreach (var i in ia)
+                                {
+                                    writer.WriteValue(i);
+                                }
+                                writer.WriteEndArray();
+                            }
+                            writer.WriteEndArray();
+                        }
+                        else if (field.PropertyType == typeof(Il2CppReferenceArray<Il2CppStringArray>))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var sa in (Il2CppReferenceArray<Il2CppStringArray>)v)
+                            {
+                                writer.WriteStartArray();
+                                foreach (var s in sa)
+                                {
+                                    writer.WriteValue(s);
                                 }
                                 writer.WriteEndArray();
                             }

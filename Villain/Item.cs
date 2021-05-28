@@ -1,11 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using UnhollowerBaseLib;
 
 namespace Villain
@@ -30,7 +29,10 @@ namespace Villain
                 Single,
                 String,
                 IntArray,
-                Float2DArray
+                StringArray,
+                Float2DArray,
+                Int2DArray,
+                String2DArray
             }
 
             private readonly ValueType tag;
@@ -49,7 +51,10 @@ namespace Villain
             private readonly float @float;
             private readonly IntPtr @string;
             private readonly Il2CppStructArray<int> intArray;
+            private readonly Il2CppStringArray stringArray;
             private readonly Il2CppReferenceArray<Il2CppStructArray<float>> float2DArray;
+            private readonly Il2CppReferenceArray<Il2CppStructArray<int>> int2DArray;
+            private readonly Il2CppReferenceArray<Il2CppStringArray> string2DArray;
 
             public bool IsNone { get; }
 
@@ -71,7 +76,10 @@ namespace Villain
                 @float = default;
                 @string = IL2CPP.ManagedStringToIl2Cpp("");
                 intArray = default;
+                stringArray = default;
                 float2DArray = default;
+                int2DArray = default;
+                string2DArray = default;
 
                 if (type == typeof(string))
                 {
@@ -83,7 +91,7 @@ namespace Villain
                     //  Maybe making a reference circle is another solution.
                     @string = Il2CppHelper.il2cpp_string_intern(
                         IL2CPP.ManagedStringToIl2Cpp(value.Value<string>()));
-                    
+
                 }
                 else if (type == typeof(bool))
                 {
@@ -156,14 +164,21 @@ namespace Villain
                     tag = ValueType.Single;
                     if (value == null) return;
                     @float = value.Value<float>();
-                } 
+                }
                 else if (type == typeof(Il2CppStructArray<int>))
                 {
                     tag = ValueType.IntArray;
                     if (value == null) return;
                     var arr = value.Value<JArray>().Select(t => t.Value<int>()).ToArray();
                     intArray = arr;
-                } 
+                }
+                else if (type == typeof(Il2CppStringArray))
+                {
+                    tag = ValueType.StringArray;
+                    if (value == null) return;
+                    var arr = value.Value<JArray>().Select(t => t.Value<string>()).ToArray();
+                    stringArray = arr;
+                }
                 else if (type == typeof(Il2CppReferenceArray<Il2CppStructArray<float>>))
                 {
                     tag = ValueType.Float2DArray;
@@ -178,6 +193,36 @@ namespace Villain
                         })
                         .ToArray();
                     float2DArray = arr;
+                }
+                else if (type == typeof(Il2CppReferenceArray<Il2CppStructArray<int>>))
+                {
+                    tag = ValueType.Int2DArray;
+                    if (value == null) return;
+                    var arr = value.Value<JArray>()
+                        .Select(t =>
+                        {
+                            Il2CppStructArray<int> arr2 = t.Value<JArray>()
+                                .Select(t2 => t2.Value<int>())
+                                .ToArray();
+                            return arr2;
+                        })
+                        .ToArray();
+                    int2DArray = arr;
+                }
+                else if (type == typeof(Il2CppReferenceArray<Il2CppStringArray>))
+                {
+                    tag = ValueType.String2DArray;
+                    if (value == null) return;
+                    var arr = value.Value<JArray>()
+                        .Select(t =>
+                        {
+                            Il2CppStringArray arr2 = t.Value<JArray>()
+                                .Select(t2 => t2.Value<string>())
+                                .ToArray();
+                            return arr2;
+                        })
+                        .ToArray();
+                    string2DArray = arr;
                 }
                 else
                 {
@@ -217,8 +262,14 @@ namespace Villain
                         fixed (float* p = &@float) { return (IntPtr)p; }
                     case ValueType.IntArray:
                         return intArray.Pointer;
+                    case ValueType.StringArray:
+                        return stringArray.Pointer;
                     case ValueType.Float2DArray:
                         return float2DArray.Pointer;
+                    case ValueType.Int2DArray:
+                        return int2DArray.Pointer;
+                    case ValueType.String2DArray:
+                        return string2DArray.Pointer;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -239,7 +290,10 @@ namespace Villain
                 Action<double> f12,
                 Action<float> f13,
                 Action<Il2CppStructArray<int>> f14,
-                Action<Il2CppReferenceArray<Il2CppStructArray<float>>> f15)
+                Action<Il2CppStringArray> f15,
+                Action<Il2CppReferenceArray<Il2CppStructArray<float>>> f16,
+                Action<Il2CppReferenceArray<Il2CppStructArray<int>>> f17,
+                Action<Il2CppReferenceArray<Il2CppStringArray>> f18)
             {
                 switch (tag)
                 {
@@ -285,8 +339,17 @@ namespace Villain
                     case ValueType.IntArray:
                         f14(intArray);
                         break;
+                    case ValueType.StringArray:
+                        f15(stringArray);
+                        break;
                     case ValueType.Float2DArray:
-                        f15(float2DArray);
+                        f16(float2DArray);
+                        break;
+                    case ValueType.Int2DArray:
+                        f17(int2DArray);
+                        break;
+                    case ValueType.String2DArray:
+                        f18(string2DArray);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -397,7 +460,10 @@ namespace Villain
                         double1 => *(double*)ptr = double1,
                         float1 => *(float*)ptr = float1,
                         intArray => *(IntPtr*)ptr = intArray.Pointer,
-                        float2D => *(IntPtr*)ptr = float2D.Pointer
+                        stringArray => *(IntPtr*)ptr = stringArray.Pointer,
+                        float2D => *(IntPtr*)ptr = float2D.Pointer,
+                        int2D => *(IntPtr*)ptr = int2D.Pointer,
+                        string2D => *(IntPtr*)ptr = string2D.Pointer
                     );
                 }
             }
@@ -417,8 +483,8 @@ namespace Villain
                 var args = stackalloc IntPtr[paramLen];
 
                 var id = Id;
-                args[0] = (IntPtr) (&id);
-                
+                args[0] = (IntPtr)(&id);
+
                 for (var i = 1; i < paramLen; i++)
                 {
                     var j = i - 1;
@@ -435,8 +501,8 @@ namespace Villain
                 var exc = IntPtr.Zero;
                 IL2CPP.il2cpp_runtime_invoke(record.ItemCtor.Item2, IL2CPP.Il2CppObjectBaseToPtrNotNull(obj), (void**)args, ref exc);
                 Il2CppException.RaiseExceptionIfNecessary(exc);
-                
-                
+
+
             }
 
             return obj;
@@ -454,7 +520,7 @@ namespace Villain
             {
                 var (p1, ofs1) = record.FieldsInfo[i];
                 var (p2, ofs2) = other.record.FieldsInfo[i];
-                
+
                 Logger.Assert(p1 == p2 && ofs1 == ofs2, "Must be same");
 
                 var v = other.values[i];
