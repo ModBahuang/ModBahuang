@@ -36,7 +36,7 @@ using MelonLoader;
 [assembly: AssemblyVersion("0.0.3.3")]
 [assembly: AssemblyFileVersion("0.0.3.3")]
 
-[assembly: MelonInfo(typeof(Hylas.Hylas), "Hylas", "0.3.3", "A")]
+[assembly: MelonInfo(typeof(Hylas.Hylas), "Hylas", "0.4.0", "A")]
 [assembly: MelonColor]
 
 [assembly: MelonGame]
