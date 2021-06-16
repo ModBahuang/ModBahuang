@@ -59,6 +59,7 @@ namespace Villain
         public static string[] specialClass = new[]
         {
             "ConfNpcSpecialBase",
+            "ConfNpcFeedback1031Base"
         };
         
         private static class Validator
