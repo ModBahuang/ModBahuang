@@ -56,6 +56,11 @@ namespace Villain
 
     internal static class ConfClassRecordStore
     {
+        public static string[] specialClass = new[]
+        {
+            "ConfNpcSpecialBase",
+        };
+        
         private static class Validator
         {
             public static bool IsValidConfMgr(TypeDef confMgr)
@@ -235,16 +240,24 @@ namespace Villain
             {
                 var init = @class.FindMethod("Init");
                 Logger.Assert(init != null, () => $"Method `Init` must exsit in `{@class.FullName}`");
+                MethodDef finalInit;
+                if (specialClass.Contains<string>(@class.Name))
+                {
+                    finalInit = init;
+                }
+                else
+                {
+                    var inits = @class.Methods
+                        .Where(m => m.IsPrivate && !m.IsStatic && m.Name.StartsWith("Init"))
+                        .OrderBy(m => int.Parse(m.Name.Substring(4)))
+                        .ToArray();
 
-                var inits = @class.Methods
-                    .Where(m => m.IsPrivate && !m.IsStatic && m.Name.StartsWith("Init"))
-                    .OrderBy(m => int.Parse(m.Name.Substring(4)))
-                    .ToArray();
+                    Logger.Assert(inits.Length > 0, $"There must be at least one `Init1` in `{@class.FullName}`");
+                    Logger.Assert(inits[0].Name == "Init1", "The first method must be `Init1`");
 
-                Logger.Assert(inits.Length > 0, $"There must be at least one `Init1` in `{@class.FullName}`");
-                Logger.Assert(inits[0].Name == "Init1", "The first method must be `Init1`");
-
-                var finalInit = inits[inits.Length - 1];
+                    finalInit = inits[inits.Length - 1];
+                }
+                
 
                 return GetMethodRva(finalInit);
 
