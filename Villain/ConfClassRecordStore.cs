@@ -323,7 +323,7 @@ namespace Villain
         {
             // FIXME: Is this path reliable?
             var dummyPath = Path.Combine(MelonUtils.GameDirectory,
-                "MelonLoader", "Dependencies", "AssemblyGenerator",
+                "MelonLoader", "Dependencies", "Il2CppAssemblyGenerator",
                 "Il2CppDumper", "DummyDll");
 
             var mainAssmeblyPath = Path.Combine(dummyPath, "Assembly-CSharp.dll");
