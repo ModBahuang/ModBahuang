@@ -84,7 +84,7 @@ namespace Villain
 
             foreach (var item in set.Select(id => items[id]))
             {
-                conf.allConfBase.Add(item.Construct());
+                conf.AddItem(item.Id,item.Construct());
             }
         }
 
