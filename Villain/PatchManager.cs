@@ -10,12 +10,12 @@ namespace Villain
     internal class PatchFormatException : FormatException
     {
 
-        public static void ThrowWhenJsonReaderException(JsonReaderException e)
+        public static void ThrowWhenJsonReaderException(FileInfo conf, JsonReaderException e)
         {
             var b = new StringBuilder();
-            b.Append($"The file(at {e.Path}) in your patch is invalid. ");
-            b.Append("Your file must be valid Json format and only have an array element which contains only objects.");
-            b.AppendLine($"Error at line: {e.LineNumber}, position: {e.LinePosition}");
+            b.Append($"The file(at {conf.FullName}) in your patch is invalid. ");
+            b.Append("Your file must be valid Json format and only have an array element which contains only objects. ");
+            b.AppendLine($"Error at path: {e.Path}, line: {e.LineNumber}, position: {e.LinePosition}");
 
             var message = b.ToString();
 
@@ -99,7 +99,7 @@ namespace Villain
                     }
                     catch (JsonReaderException e)
                     {
-                        PatchFormatException.ThrowWhenJsonReaderException(e);
+                        PatchFormatException.ThrowWhenJsonReaderException(currentConf, e);
                     }
                 }
 
