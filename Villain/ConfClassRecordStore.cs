@@ -154,6 +154,7 @@ namespace Villain
             private static int GetFieldOffset(IHasCustomAttribute field)
             {
                 var attr = field.CustomAttributes.Find("Il2CppDummyDll.FieldOffsetAttribute");
+                attr = attr ?? field.CustomAttributes.Find("Cpp2IlInjected.FieldOffsetAttribute");
                 Logger.Assert(attr != null, $"Field({field}) in dummy dll must have a FieldOffsetAttribute");
 
                 var rva = attr?.GetField("Offset")?.Argument.Value.ToString();
@@ -223,6 +224,7 @@ namespace Villain
                 var ctor = cs[0];
 
                 var addressAttribute = ctor.CustomAttributes.Find("Il2CppDummyDll.TokenAttribute");
+                addressAttribute = addressAttribute ?? ctor.CustomAttributes.Find("Cpp2IlInjected.TokenAttribute");
                 Logger.Assert(addressAttribute != null, $"Method({ctor}) in dummy dll must have a TokenAttribute");
 
                 var token = addressAttribute?.GetField("Token")?.Argument.Value.ToString();
@@ -267,6 +269,7 @@ namespace Villain
             private static int GetMethodRva(IHasCustomAttribute method)
             {
                 var addressAttribute = method.CustomAttributes.Find("Il2CppDummyDll.AddressAttribute");
+                addressAttribute = addressAttribute ?? method.CustomAttributes.Find("Cpp2IlInjected.AddressAttribute");
                 Logger.Assert(addressAttribute != null, $"Non-virtual method({method}) in dummy dll must have a AddressAttribute");
 
                 var rva = addressAttribute?.GetField("RVA")?.Argument.Value.ToString();
@@ -305,6 +308,11 @@ namespace Villain
 
                     // e.g. ConfAnimaWeaponBase
                     var baseType = propertyType?.BaseType?.ResolveTypeDefThrow();
+                    if (baseType == null) // stripping error Cpp2IL ?
+                    {
+                        MelonLogger.Msg($"propertyType {propertyType.ToString()} has no base type");
+                        continue;
+                    }
                     Logger.Assert(baseType != null, "baseType must not be null");
 
                     // ConfBase
@@ -321,11 +329,32 @@ namespace Villain
 
         static ConfClassRecordStore()
         {
-            // FIXME: Is this path reliable?
-            var dummyPath = Path.Combine(MelonUtils.GameDirectory,
+            string[] dummyDllPaths = new string[]
+            {
+                Path.Combine(MelonUtils.GameDirectory,
+                "MelonLoader", "Dependencies", "AssemblyGenerator",
+                "Il2CppDumper", "DummyDll"),
+                Path.Combine(MelonUtils.GameDirectory,
                 "MelonLoader", "Dependencies", "Il2CppAssemblyGenerator",
-                "Il2CppDumper", "DummyDll");
-
+                "Il2CppDumper", "DummyDll"),
+                Path.Combine(MelonUtils.GameDirectory,
+                "MelonLoader", "Dependencies", "Il2CppAssemblyGenerator",
+                "Cpp2IL", "cpp2il_out"),
+            };
+            string dummyPath = null;
+            foreach (string path in dummyDllPaths)
+            {
+                if (Directory.Exists(path))
+                {
+                    MelonLogger.Msg($"Lookup {path}");
+                    dummyPath = path;
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(dummyPath))
+            {
+                throw new Exception("Cannot find Assembly-CSharp.dll in predefines directories");
+            }
             var mainAssmeblyPath = Path.Combine(dummyPath, "Assembly-CSharp.dll");
 
             var collector = new Collector(mainAssmeblyPath);
